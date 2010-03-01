@@ -194,7 +194,3 @@ eval {
 } or do {
     error_page { -title => "error", -text => "$@" };
 };
-# print Dumper($q->param);
-# print url_filter("asdf");
-# print generate_link_name();
-# success_page { -slug => "slug", -url => "foo" };
