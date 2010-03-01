@@ -1,4 +1,4 @@
-#!/usr/bin/env perl
+#!/usr/bin/speedy
 
 use warnings;
 use strict;
@@ -7,11 +7,17 @@ use CGI ();
 use Data::Dumper;
 use DBI;
 
+use vars qw($q $dbh $base_url);
 
-my $q = CGI->new;
-my $dbh = DBI->connect("dbi:Pg:dbname=intertubes", '', '');
+{
+    $q = CGI->new;
+    my $port_expr = $q->virtual_port() == 80 ? '' : ':' . $q->virtual_port();
+    $base_url = 'http://' . $q->virtual_host() . $port_expr . $q->script_name();
 
-my $base_url = 'http://' . $q->virtual_host() . ':' . $q->virtual_port() . $q->script_name();
+    unless (defined($dbh) and $dbh->ping) {
+        $dbh = DBI->connect("dbi:Pg:dbname=intertubes", '', '');
+    }
+}
 
 sub lookup_slug {
     my ($slug) = @_;
