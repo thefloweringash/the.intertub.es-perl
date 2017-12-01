@@ -1,23 +1,14 @@
-#!/usr/bin/speedy
+#!/usr/bin/env perl
 
 use warnings;
 use strict;
 
-use CGI ();
-use Data::Dumper;
+use CGI::Fast ();
 use DBI;
 
-use vars qw($q $dbh $base_url);
-
-{
-    $q = CGI->new;
-    my $port_expr = $q->virtual_port() == 80 ? '' : ':' . $q->virtual_port();
-    $base_url = 'http://' . $q->virtual_host() . $port_expr . $q->script_name();
-
-    unless (defined($dbh) and $dbh->ping) {
-        $dbh = DBI->connect("dbi:Pg:dbname=intertubes", '', '');
-    }
-}
+my $q;
+my $dbh;
+my $base_url;
 
 sub lookup_slug {
     my ($slug) = @_;
@@ -87,7 +78,7 @@ sub error_page {
 
 sub create_page {
     basic_page { -title => "create",
-                 -body => $q->start_form({-method=>"post",-action=>$base_url . "/create"}) .
+                 -body => $q->start_form({-method=>"post",-action=>$base_url . "/create",-enctype=>"application/x-www-form-urlencoded"}) .
                           $q->input({-name=>"url"}) .
                           $q->end_form() };
 }
@@ -195,8 +186,17 @@ sub route {
     }
 }
 
-eval {
-    route();
-} or do {
-    error_page { -title => "error", -text => "$@" };
-};
+while ($q = new CGI::Fast) {
+    eval {
+        $base_url = 'https://the.intertub.es';
+
+        unless (defined($dbh) and $dbh->ping) {
+            $dbh = DBI->connect("dbi:Pg:dbname=intertubes", 'theintertubes', '')
+                or die $DBI::errstr;
+        }
+
+        route();
+    } or do {
+        error_page { -title => "error", -text => "$@" };
+    };
+}
